@@ -25,57 +25,76 @@ activities = {
         "description": "Learn strategies and compete in chess tournaments",
         "schedule": "Fridays, 3:30 PM - 5:00 PM",
         "max_participants": 12,
+        "category": "Academic",
         "participants": ["michael@mergington.edu", "daniel@mergington.edu"]
     },
     "Programming Class": {
         "description": "Learn programming fundamentals and build software projects",
         "schedule": "Tuesdays and Thursdays, 3:30 PM - 4:30 PM",
-        "max_participants": 20,
+        "max_participants": 2,
+        "category": "STEM",
         "participants": ["emma@mergington.edu", "sophia@mergington.edu"]
     },
     "Gym Class": {
         "description": "Physical education and sports activities",
         "schedule": "Mondays, Wednesdays, Fridays, 2:00 PM - 3:00 PM",
         "max_participants": 30,
+        "category": "Wellness",
         "participants": ["john@mergington.edu", "olivia@mergington.edu"]
     },
     "Soccer Team": {
         "description": "Join the school soccer team and compete in matches",
         "schedule": "Tuesdays and Thursdays, 4:00 PM - 5:30 PM",
         "max_participants": 22,
+        "category": "Sports",
         "participants": ["liam@mergington.edu", "noah@mergington.edu"]
     },
     "Basketball Team": {
         "description": "Practice and play basketball with the school team",
         "schedule": "Wednesdays and Fridays, 3:30 PM - 5:00 PM",
         "max_participants": 15,
+        "category": "Sports",
         "participants": ["ava@mergington.edu", "mia@mergington.edu"]
     },
     "Art Club": {
         "description": "Explore your creativity through painting and drawing",
         "schedule": "Thursdays, 3:30 PM - 5:00 PM",
         "max_participants": 15,
+        "category": "Arts",
         "participants": ["amelia@mergington.edu", "harper@mergington.edu"]
     },
     "Drama Club": {
         "description": "Act, direct, and produce plays and performances",
         "schedule": "Mondays and Wednesdays, 4:00 PM - 5:30 PM",
         "max_participants": 20,
+        "category": "Arts",
         "participants": ["ella@mergington.edu", "scarlett@mergington.edu"]
     },
     "Math Club": {
         "description": "Solve challenging problems and participate in math competitions",
         "schedule": "Tuesdays, 3:30 PM - 4:30 PM",
         "max_participants": 10,
+        "category": "Academic",
         "participants": ["james@mergington.edu", "benjamin@mergington.edu"]
     },
     "Debate Team": {
         "description": "Develop public speaking and argumentation skills",
         "schedule": "Fridays, 4:00 PM - 5:30 PM",
         "max_participants": 12,
+        "category": "Leadership",
         "participants": ["charlotte@mergington.edu", "henry@mergington.edu"]
     }
 }
+
+
+def serialize_activity(name: str, details: dict) -> dict:
+    participant_count = len(details.get("participants", []))
+    max_participants = details.get("max_participants", 0)
+    activity = dict(details)
+    activity["category"] = details.get("category", "General")
+    activity["participant_count"] = participant_count
+    activity["spots_left"] = max(max_participants - participant_count, 0)
+    return activity
 
 
 @app.get("/")
@@ -85,7 +104,10 @@ def root():
 
 @app.get("/activities")
 def get_activities():
-    return activities
+    return {
+        name: serialize_activity(name, details)
+        for name, details in activities.items()
+    }
 
 
 @app.post("/activities/{activity_name}/signup")
@@ -103,6 +125,13 @@ def signup_for_activity(activity_name: str, email: str):
         raise HTTPException(
             status_code=400,
             detail="Student is already signed up"
+        )
+
+    # Validate activity still has available spots
+    if len(activity["participants"]) >= activity["max_participants"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Activity is full"
         )
 
     # Add student
